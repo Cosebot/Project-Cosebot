@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 import requests
 
 # Initialize Wikipedia API
-wiki_wiki = wikipediaapi.Wikipedia('en')
+wiki_wiki = wikipediaapi.Wikipedia(user_agent="Chatbot Bot/1.0 (https://goosgle.com)")
 
 # Function to generate bot responses
 def get_bot_response(user_message):
