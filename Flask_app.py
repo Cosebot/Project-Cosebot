@@ -2,20 +2,60 @@ import http.server
 import socketserver
 import json
 from urllib.parse import unquote
+import wikipediaapi
+from gtts import gTTS
+import os
+from bs4 import BeautifulSoup
+import requests
+
+# Initialize Wikipedia API
+wiki_wiki = wikipediaapi.Wikipedia('en')
 
 # Function to generate bot responses
 def get_bot_response(user_message):
     responses = {
         "hi": "Hello! How can I assist you?",
         "hello": "Hi there! How can I help?",
-        "how are you? ": " I'm doing great usual! How can I assist?",
+        "how are you?": "I'm doing great as usual! How can I assist?",
         "bye": "Goodbye! Have a great day!",
-        "what is your name? ": "I'm Roronoa zoro! But you can call me Zoro.",
+        "what is your name?": "I'm Roronoa Zoro! But you can call me Zoro.",
         "thank you": "You're welcome! Let me know if there's anything else I can do.",
-        "what can you do?": " As I am in my update 1, I can only talk. But, more updates are coming quickly so I will be more advanced ", 
-" how old are you? ": " I am 30"
+        "what can you do?": "As I am in my update 2, I can chat, search Wikipedia, scrape websites, and even reply using my voice!",
+        "how old are you?": "I am 30!",
     }
+
+    if user_message.lower().startswith("wiki "):
+        topic = user_message[5:]
+        return get_wikipedia_summary(topic)
+
+    if user_message.lower().startswith("scrape "):
+        url = user_message[7:]
+        return scrape_website(url)
+
     return responses.get(user_message.lower(), "Sorry, I don't understand that.")
+
+# Function to get a Wikipedia summary
+def get_wikipedia_summary(topic):
+    page = wiki_wiki.page(topic)
+    if page.exists():
+        return page.summary[:500] + "..."  # Return first 500 characters
+    else:
+        return "Sorry, I couldn't find anything on Wikipedia for that topic."
+
+# Function to scrape a website
+def scrape_website(url):
+    try:
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        return "Here is the title of the page: " + soup.title.string
+    except Exception as e:
+        return f"Failed to scrape the website: {str(e)}"
+
+# Function to generate TTS and save as an audio file
+def generate_tts_response(text):
+    tts = gTTS(text)
+    tts.save("response.mp3")
+    return "response.mp3"
 
 # The request handler class
 class MyHandler(http.server.BaseHTTPRequestHandler):
@@ -25,7 +65,6 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
-
             self.wfile.write(f"""
             <!DOCTYPE html>
             <html lang="en">
@@ -121,6 +160,12 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                                 // Display bot response
                                 chatlogs.innerHTML += "<div class='bot-msg'>" + data.response + "</div>";
                                 chatlogs.scrollTop = chatlogs.scrollHeight;
+
+                                // If audio file exists, play it
+                                if (data.audio) {{
+                                    var audio = new Audio('/' + data.audio);
+                                    audio.play();
+                                }}
                             }});
                         }}
                     }}
@@ -133,12 +178,20 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             try:
                 message = unquote(self.path.split('=')[1])  # Extract message from URL
                 response = get_bot_response(message)
+                audio_file = generate_tts_response(response)  # Generate TTS
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
-                self.wfile.write(json.dumps({"response": response}).encode())
+                self.wfile.write(json.dumps({"response": response, "audio": audio_file}).encode())
             except IndexError:
                 self.send_error(400, "Bad Request: No message provided.")
+        elif self.path.startswith('/response.mp3'):
+            # Serve the audio file
+            self.send_response(200)
+            self.send_header("Content-type", "audio/mpeg")
+            self.end_headers()
+            with open("response.mp3", "rb") as file:
+                self.wfile.write(file.read())
 
 # Server setup
 def run(server_class=http.server.HTTPServer, handler_class=MyHandler, port=8000):
