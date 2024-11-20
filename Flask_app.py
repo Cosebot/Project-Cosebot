@@ -4,12 +4,13 @@ import json
 from urllib.parse import unquote
 import wikipediaapi
 from gtts import gTTS
+from pydub import AudioSegment
 import os
 from bs4 import BeautifulSoup
 import requests
 
 # Initialize Wikipedia API
-wiki_wiki = wikipediaapi.Wikipedia(user_agent="Chatbot Bot/1.0 (https://goosgle.com)")
+wiki_wiki = wikipediaapi.Wikipedia('en')
 
 # Function to generate bot responses
 def get_bot_response(user_message):
@@ -51,10 +52,23 @@ def scrape_website(url):
     except Exception as e:
         return f"Failed to scrape the website: {str(e)}"
 
-# Function to generate TTS and save as an audio file
-def generate_tts_response(text):
+# def generate_tts_response(text):
+    # Generate TTS audio using gTTS
     tts = gTTS(text)
     tts.save("response.mp3")
+    
+    # Lower the pitch using Pydub
+    sound = AudioSegment.from_file("response.mp3")
+    octaves = -0.3  # Adjust this value to lower pitch further (negative for deeper voice)
+    new_sample_rate = int(sound.frame_rate * (2.0 ** octaves))
+    
+    # Apply the pitch change
+    sound = sound._spawn(sound.raw_data, overrides={"frame_rate": new_sample_rate})
+    sound = sound.set_frame_rate(44100)  # Set back to standard frame rate
+    
+    # Export the modified audio
+    sound.export("response.mp3", format="mp3")
+   
     return "response.mp3"
 
 # The request handler class
