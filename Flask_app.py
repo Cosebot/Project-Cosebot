@@ -1,18 +1,13 @@
+import requests
+
 import http.server
 import socketserver
 import json
 from urllib.parse import unquote
-import wikipediaapi
 from gtts import gTTS
 from pydub import AudioSegment
 import os
 from bs4 import BeautifulSoup
-import requests
-
-wiki_wiki = wikipediaapi.Wikipedia(
-    language='en',
-    user_agent="Project-Cosebot/1.0 (https://github.com/Cosebot/Project-Cosebot)"
-)
 
 # Function to generate bot responses
 def get_bot_response(user_message):
@@ -23,27 +18,15 @@ def get_bot_response(user_message):
         "bye": "Goodbye! Have a great day!",
         "what is your name?": "I'm Roronoa Zoro! But you can call me Zoro.",
         "thank you": "You're welcome! Let me know if there's anything else I can do.",
-        "what can you do?": "As I am in my update 2, I can chat, search Wikipedia, scrape websites, and even reply using my voice!",
+        "what can you do?": "As I am in my update 2, I can chat, scrape websites, and even reply using my voice!",
         "how old are you?": "I am 30!",
     }
-
-    if user_message.lower().startswith("wiki "):
-        topic = user_message[5:]
-        return get_wikipedia_summary(topic)
 
     if user_message.lower().startswith("scrape "):
         url = user_message[7:]
         return scrape_website(url)
 
     return responses.get(user_message.lower(), "Sorry, I don't understand that.")
-
-# Function to get a Wikipedia summary
-def get_wikipedia_summary(topic):
-    page = wiki_wiki.page(topic)
-    if page.exists():
-        return page.summary[:500] + "..."  # Return first 500 characters
-    else:
-        return "Sorry, I couldn't find anything on Wikipedia for that topic."
 
 # Function to scrape a website
 def scrape_website(url):
