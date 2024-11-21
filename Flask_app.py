@@ -10,7 +10,10 @@ from bs4 import BeautifulSoup
 import requests
 
 # Initialize Wikipedia API
-wiki_wiki = wikipediaapi.Wikipedia('en')
+wiki_wiki = wikipediaapi.Wikipedia(
+    language='en',
+    user_agent="Project-Cosebot/1.0 (https://github.com/Cosebot/Project-Cosebot)"
+)
 
 # Function to generate bot responses
 def get_bot_response(user_message):
