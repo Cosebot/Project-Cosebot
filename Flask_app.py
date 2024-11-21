@@ -9,7 +9,6 @@ import os
 from bs4 import BeautifulSoup
 import requests
 
-# Initialize Wikipedia API
 wiki_wiki = wikipediaapi.Wikipedia(
     language='en',
     user_agent="Project-Cosebot/1.0 (https://github.com/Cosebot/Project-Cosebot)"
@@ -55,7 +54,8 @@ def scrape_website(url):
     except Exception as e:
         return f"Failed to scrape the website: {str(e)}"
 
-# def generate_tts_response(text):
+# Function to generate TTS and save as an audio file
+def generate_tts_response(text):
     # Generate TTS audio using gTTS
     tts = gTTS(text)
     tts.save("response.mp3")
