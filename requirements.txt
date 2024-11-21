@@ -3,3 +3,4 @@ wikipedia-api
 beautifulsoup4
 requests
 gtts
+pydub
