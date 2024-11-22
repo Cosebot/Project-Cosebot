@@ -89,68 +89,103 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Python Chatbot</title>
-                <style>
-                    body {{
-                        font-family: Arial, sans-serif;
-                        background-color: #f5f5f5;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        height: 100vh;
-                        margin: 0;
-                    }}
-                    .chatbox {{
-                        background-color: #fff;
-                        width: 300px;
-                        border-radius: 10px;
-                        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-                        padding: 20px;
-                        display: flex;
-                        flex-direction: column;
-                        height: 400px;
-                    }}
-                    .chatlogs {{
-                        flex-grow: 1;
-                        overflow-y: auto;
-                        margin-bottom: 10px;
-                    }}
-                    .chat-input {{
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                    }}
-                    .chat-input input {{
-                        width: 80%;
-                        padding: 8px;
-                        border-radius: 5px;
-                        border: 1px solid #ddd;
-                    }}
-                    .chat-input button {{
-                        padding: 8px 12px;
-                        background-color: #4CAF50;
-                        color: white;
-                        border: none;
-                        border-radius: 5px;
-                        cursor: pointer;
-                    }}
-                    .user-msg {{
-                        text-align: right;
-                        margin: 10px 0;
-                        padding: 10px;
-                        background-color: #f1f1f1;
-                        border-radius: 10px;
-                        max-width: 80%;
-                        margin-left: auto;
-                    }}
-                    .bot-msg {{
-                        text-align: left;
-                        margin: 10px 0;
-                        padding: 10px;
-                        background-color: #e0e0e0;
-                        border-radius: 10px;
-                        max-width: 80%;
-                    }}
-                </style>
+               <style>
+    body {
+        font-family: "Trebuchet MS", sans-serif;
+        background-color: #f8d568; /* Warm yellow background */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    .chatbox {
+        background-color: #1d770d; /* Green background for chatbox */
+        border: 3px solid #ffffff; /* Bold white border */
+        width: 350px;
+        border-radius: 15px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        height: 500px;
+    }
+
+    .chatlogs {
+        flex-grow: 1;
+        overflow-y: scroll;
+        margin-bottom: 10px;
+        border: 2px solid #d0312d; /* Red border for chat logs */
+        background-color: #ffeead; /* Pale yellow background for messages */
+        border-radius: 10px;
+        padding: 10px;
+    }
+
+    .chat-input {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .chat-input input {
+        width: 80%;
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #ffffff; /* White border for input field */
+        background-color: #f7fff0; /* Light greenish background */
+    }
+
+    .chat-input button {
+        padding: 8px 12px;
+        background-color: #ffcc33; /* Gold-like yellow for the button */
+        color: #ffffff; /* White text */
+        border: 1px solid #e69900; /* Golden border */
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+    }
+
+    .chat-input button:hover {
+        background-color: #e69900; /* Darker gold on hover */
+    }
+
+    .user-msg {
+        text-align: right;
+        margin: 10px 0;
+        padding: 10px;
+        background-color: #f7b7a3; /* Soft red background for user messages */
+        border-radius: 10px;
+        max-width: 80%;
+        margin-left: auto;
+        color: #000000; /* Black text for visibility */
+        font-weight: bold;
+    }
+
+    .bot-msg {
+        text-align: left;
+        margin: 10px 0;
+        padding: 10px;
+        background-color: #dff0d8; /* Light green background for bot messages */
+        border-radius: 10px;
+        max-width: 80%;
+        color: #000000; /* Black text for visibility */
+        font-weight: bold;
+    }
+
+    /* Scrollbar styling for chatlogs */
+    .chatlogs::-webkit-scrollbar {
+        width: 10px;
+    }
+    .chatlogs::-webkit-scrollbar-thumb {
+        background-color: #d0312d; /* Red scrollbar thumb */
+        border-radius: 5px;
+    }
+    .chatlogs::-webkit-scrollbar-track {
+        background-color: #ffeead; /* Match pale yellow background */
+    }
+</style>                   
             </head>
             <body>
                 <div class="chatbox">
