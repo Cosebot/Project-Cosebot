@@ -14,6 +14,7 @@ wiki_wiki = wikipediaapi.Wikipedia(
     user_agent="Project-Cosebot/1.0 (https://github.com/Cosebot/Project-Cosebot)"
 )
 
+# Function to generate bot responses
 def get_bot_response(user_message):
     responses = {
         "hi": "Hello! How can I assist you?",
@@ -36,6 +37,7 @@ def get_bot_response(user_message):
 
     return responses.get(user_message.lower(), "Sorry, I don't understand that.")
 
+# Function to get a Wikipedia summary
 def get_wikipedia_summary(topic):
     page = wiki_wiki.page(topic)
     if page.exists():
@@ -52,23 +54,27 @@ def scrape_website(url):
     except Exception as e:
         return f"Failed to scrape the website: {str(e)}"
 
+# Function to generate TTS and save as an audio file
 def generate_tts_response(text):
     # Generate TTS audio using gTTS
     tts = gTTS(text)
     tts.save("response.mp3")
     
-    # Here we adjusting pitch using Pydub
+    # Lower the pitch using Pydub
     sound = AudioSegment.from_file("response.mp3")
     octaves = -0.3  # Adjust this value to lower pitch further (negative for deeper voice)
     new_sample_rate = int(sound.frame_rate * (2.0 ** octaves))
     
+    # Apply the pitch change
     sound = sound._spawn(sound.raw_data, overrides={"frame_rate": new_sample_rate})
     sound = sound.set_frame_rate(44100)  # Set back to standard frame rate
     
+    # Export the modified audio
     sound.export("response.mp3", format="mp3")
    
     return "response.mp3"
 
+# The request handler class
 class MyHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/':
@@ -185,6 +191,7 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             </html>
             """.encode())
         elif self.path.startswith('/get_response'):
+            # Handle chatbot response requests
             try:
                 message = unquote(self.path.split('=')[1])  # Extract message from URL
                 response = get_bot_response(message)
@@ -196,12 +203,14 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             except IndexError:
                 self.send_error(400, "Bad Request: No message provided.")
         elif self.path.startswith('/response.mp3'):
+            # Serve the audio file
             self.send_response(200)
             self.send_header("Content-type", "audio/mpeg")
             self.end_headers()
             with open("response.mp3", "rb") as file:
                 self.wfile.write(file.read())
 
+# Server setup
 def run(server_class=http.server.HTTPServer, handler_class=MyHandler, port=8000):
     with socketserver.TCPServer(("", port), handler_class) as httpd:
         print(f"Serving on port {port}")
