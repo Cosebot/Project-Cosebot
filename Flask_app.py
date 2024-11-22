@@ -1,3 +1,4 @@
+import threading
 import http.server
 import socketserver
 import json
@@ -90,7 +91,7 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Python Chatbot</title>
                <style>
-    body {
+    body {{
         font-family: "Trebuchet MS", sans-serif;
         background-color: #f8d568; /* Warm yellow background */
         display: flex;
@@ -98,9 +99,9 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         align-items: center;
         height: 100vh;
         margin: 0;
-    }
+    }}
 
-    .chatbox {
+    .chatbox {{
         background-color: #1d770d; /* Green background for chatbox */
         border: 3px solid #ffffff; /* Bold white border */
         width: 350px;
@@ -110,9 +111,9 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         display: flex;
         flex-direction: column;
         height: 500px;
-    }
+    }}
 
-    .chatlogs {
+    .chatlogs {{
         flex-grow: 1;
         overflow-y: scroll;
         margin-bottom: 10px;
@@ -120,23 +121,23 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         background-color: #ffeead; /* Pale yellow background for messages */
         border-radius: 10px;
         padding: 10px;
-    }
+    }}
 
-    .chat-input {
+    .chat-input {{
         display: flex;
         justify-content: space-between;
         align-items: center;
-    }
+    }}
 
-    .chat-input input {
+    .chat-input input {{
         width: 80%;
         padding: 8px;
         border-radius: 5px;
         border: 1px solid #ffffff; /* White border for input field */
         background-color: #f7fff0; /* Light greenish background */
-    }
+    }}
 
-    .chat-input button {
+    .chat-input button {{
         padding: 8px 12px;
         background-color: #ffcc33; /* Gold-like yellow for the button */
         color: #ffffff; /* White text */
@@ -145,13 +146,13 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         cursor: pointer;
         font-weight: bold;
         transition: background-color 0.3s ease;
-    }
+    }}
 
-    .chat-input button:hover {
+    .chat-input button:hover {{
         background-color: #e69900; /* Darker gold on hover */
-    }
+    }}
 
-    .user-msg {
+    .user-msg {{
         text-align: right;
         margin: 10px 0;
         padding: 10px;
@@ -161,9 +162,9 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         margin-left: auto;
         color: #000000; /* Black text for visibility */
         font-weight: bold;
-    }
+    }}
 
-    .bot-msg {
+    .bot-msg {{
         text-align: left;
         margin: 10px 0;
         padding: 10px;
@@ -172,19 +173,19 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         max-width: 80%;
         color: #000000; /* Black text for visibility */
         font-weight: bold;
-    }
+    }}
 
     /* Scrollbar styling for chatlogs */
-    .chatlogs::-webkit-scrollbar {
+    .chatlogs::-webkit-scrollbar {{
         width: 10px;
-    }
-    .chatlogs::-webkit-scrollbar-thumb {
+    }}
+    .chatlogs::-webkit-scrollbar-thumb {{
         background-color: #d0312d; /* Red scrollbar thumb */
         border-radius: 5px;
-    }
-    .chatlogs::-webkit-scrollbar-track {
+    }}
+    .chatlogs::-webkit-scrollbar-track {{
         background-color: #ffeead; /* Match pale yellow background */
-    }
+    }}
 </style>                   
             </head>
             <body>
@@ -237,19 +238,28 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"response": response, "audio": audio_file}).encode())
             except IndexError:
                 self.send_error(400, "Bad Request: No message provided.")
-        elif self.path.startswith('/response.mp3'):
-            # Serve the audio file
-            self.send_response(200)
+        elif self.path.startswith('/response.mp3'):            
+self.send_response(200)
             self.send_header("Content-type", "audio/mpeg")
             self.end_headers()
             with open("response.mp3", "rb") as file:
                 self.wfile.write(file.read())
 
-# Server setup
+# Server setup for a single port
 def run(server_class=http.server.HTTPServer, handler_class=MyHandler, port=8000):
     with socketserver.TCPServer(("", port), handler_class) as httpd:
         print(f"Serving on port {port}")
         httpd.serve_forever()
 
+# Function to run multiple servers on different ports
+def run_multiple_servers(ports):
+    for port in ports:
+        # Start a new thread for each server instance
+        thread = threading.Thread(target=run, args=(http.server.HTTPServer, MyHandler, port))
+        thread.daemon = True  # Ensure thread terminates when main program ends
+        thread.start()
+
 if __name__ == "__main__":
-    run()
+    # List of ports to run servers on
+    ports = [1200, 8080, 9100, 3100, 9090, 2024, 2023]
+    run_multiple_servers(ports)
