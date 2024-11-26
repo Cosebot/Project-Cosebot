@@ -1,7 +1,2 @@
-httpserver
-wikipedia-api
-beautifulsoup4
-requests
-gtts
-pydub
-llama-stack
+Flask==3.0.0
+wikipedia-api==0.5.4
