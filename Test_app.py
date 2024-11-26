@@ -116,4 +116,5 @@ def search():
         return jsonify({'success': False, 'error': 'Page not found'})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Specify the custom port 2024 and host for localhost access
+    app.run(host='127.0.0.1', port=2024, debug=True)
