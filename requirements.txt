@@ -1,2 +1,37 @@
-Flask==3.0.0
-wikipedia-api==0.5.4
+# Natural Language Processing (NLP)
+spacy
+transformers
+nltk
+indic-nlp-library
+
+# Speech-to-Text and Text-to-Speech
+SpeechRecognition
+pydub
+gTTS
+tts
+deepspeech
+
+# Emotion and Sentiment Analysis
+textblob
+vaderSentiment
+pyAudioAnalysis
+
+# Conversational AI Frameworks
+rasa
+dialogflow
+
+# Backend and Database
+flask
+fastapi
+sqlalchemy
+
+# Machine Learning and Deep Learning
+tensorflow
+torch
+torchvision
+scikit-learn
+
+# Utilities
+openai
+numpy
+pandas
