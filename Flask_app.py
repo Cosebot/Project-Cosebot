@@ -1,265 +1,147 @@
-import threading
-import http.server
-import socketserver
-import json
-from urllib.parse import unquote
-import wikipediaapi
-from gtts import gTTS
-from pydub import AudioSegment
-import os
-from bs4 import BeautifulSoup
-import requests
+from flask import Flask, render_template_string, request, jsonify
+import pyttsx3
+import speech_recognition as sr
+from chatterbot import ChatBot
+from chatterbot.trainers import ListTrainer
 
-wiki_wiki = wikipediaapi.Wikipedia(
-    language='en',
-    user_agent="Project-Cosebot/1.0 (https://github.com/Cosebot/Project-Cosebot)"
+# Initialize Flask app
+app = Flask(__name__)
+
+# Initialize ChatBot
+chatbot = ChatBot(
+    'MyBot',
+    storage_adapter='chatterbot.storage.SQLStorageAdapter',
+    database_uri='sqlite:///db.sqlite3'
 )
 
-# Function to generate bot responses
-def get_bot_response(user_message):
-    responses = {
-        "hi": "Hello! How can I assist you?",
-        "hello": "Hi there! How can I help?",
-        "how are you?": "I'm doing great as usual! How can I assist?",
-        "bye": "Goodbye! Have a great day!",
-        "what is your name?": "I'm Roronoa Zoro! But you can call me Zoro.",
-        "thank you": "You're welcome! Let me know if there's anything else I can do.",
-        "what can you do?": "As I am in my update 2, I can chat, search Wikipedia, scrape websites, and even reply using my voice!",
-        "how old are you?": "I am 30!",
-    }
+# Initialize the trainer
+trainer = ListTrainer(chatbot)
 
-    if user_message.lower().startswith("wiki "):
-        topic = user_message[5:]
-        return get_wikipedia_summary(topic)
-
-    if user_message.lower().startswith("scrape "):
-        url = user_message[7:]
-        return scrape_website(url)
-
-    return responses.get(user_message.lower(), "Sorry, I don't understand that.")
-
-# Function to get a Wikipedia summary
-def get_wikipedia_summary(topic):
-    page = wiki_wiki.page(topic)
-    if page.exists():
-        return page.summary[:500] + "..."  # Return first 500 characters
-    else:
-        return "Sorry, I couldn't find anything on Wikipedia for that topic."
-
-# Function to scrape a website
-def scrape_website(url):
-    try:
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        return "Here is the title of the page: " + soup.title.string
-    except Exception as e:
-        return f"Failed to scrape the website: {str(e)}"
-
-# Function to generate TTS and save as an audio file
-def generate_tts_response(text):
-    # Generate TTS audio using gTTS
-    tts = gTTS(text)
-    tts.save("response.mp3")
+# Train with custom conversations
+trainer.train([
+    # Greetings
+    "Hey",
+    "Hello! How can I assist you?",
+    "How are you?",
+    "I'm just a bot, but I'm doing great! How about you?",
+    "Sup homie",
+    "Hey, what's up? How can I help?",
+    "Hey dude",
+    "Yo! How can I assist?",
     
-    # Lower the pitch using Pydub
-    sound = AudioSegment.from_file("response.mp3")
-    octaves = -0.3  # Adjust this value to lower pitch further (negative for deeper voice)
-    new_sample_rate = int(sound.frame_rate * (2.0 ** octaves))
+    # Responses to emotions
+    "I am sad",
+    "I'm sorry to hear that. Can I help cheer you up?",
+    "What's your name",
+    "I am a chatbot, here to help you.",
     
-    # Apply the pitch change
-    sound = sound._spawn(sound.raw_data, overrides={"frame_rate": new_sample_rate})
-    sound = sound.set_frame_rate(44100)  # Set back to standard frame rate
+    # Sports
+    "Who is the best football player?",
+    "That's subjective, but many people say Lionel Messi or Cristiano Ronaldo.",
+    "Who is the best football player in the world?",
+    "Many argue it's Messi, Ronaldo, or Mbappé, but it's up to you to decide!",
     
-    # Export the modified audio
-    sound.export("response.mp3", format="mp3")
-   
-    return "response.mp3"
+    # Pirate-themed responses
+    "Ahoy matey",
+    "Ahoy captain! What can I do for ya?"
+])
 
-# The request handler class
-class MyHandler(http.server.BaseHTTPRequestHandler):
-    def do_GET(self):
-        if self.path == '/':
-            # Serve the HTML, CSS, and JavaScript
-            self.send_response(200)
-            self.send_header("Content-type", "text/html")
-            self.end_headers()
-            self.wfile.write(f"""
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Python Chatbot</title>
-               <style>
-    body {{
-        font-family: "Trebuchet MS", sans-serif;
-        background-color: #f8d568; /* Warm yellow background */
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        margin: 0;
-    }}
+print("Custom responses have been added!")
 
-    .chatbox {{
-        background-color: #1d770d; /* Green background for chatbox */
-        border: 3px solid #ffffff; /* Bold white border */
-        width: 350px;
-        border-radius: 15px;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        height: 500px;
-    }}
+# Initialize TTS engine
+engine = pyttsx3.init()
 
-    .chatlogs {{
-        flex-grow: 1;
-        overflow-y: scroll;
-        margin-bottom: 10px;
-        border: 2px solid #d0312d; /* Red border for chat logs */
-        background-color: #ffeead; /* Pale yellow background for messages */
-        border-radius: 10px;
-        padding: 10px;
-    }}
+# Function to get a chatbot response
+def get_chatbot_response(user_input):
+    user_input = user_input.lower().strip()
+    response = chatbot.get_response(user_input)
+    return str(response)
 
-    .chat-input {{
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }}
+# Function to make the chatbot speak using pyttsx3 (Text-to-Speech)
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
 
-    .chat-input input {{
-        width: 80%;
-        padding: 8px;
-        border-radius: 5px;
-        border: 1px solid #ffffff; /* White border for input field */
-        background-color: #f7fff0; /* Light greenish background */
-    }}
+# Function to listen to the user's speech using SpeechRecognition (STT)
+def listen():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening...")
+        audio = recognizer.listen(source)
+        try:
+            text = recognizer.recognize_google(audio)
+            print(f"User said: {text}")
+            return text
+        except sr.UnknownValueError:
+            print("Sorry, I couldn't understand that.")
+            return None
+        except sr.RequestError:
+            print("Sorry, I couldn't request results from Google Speech Recognition service.")
+            return None
 
-    .chat-input button {{
-        padding: 8px 12px;
-        background-color: #ffcc33; /* Gold-like yellow for the button */
-        color: #ffffff; /* White text */
-        border: 1px solid #e69900; /* Golden border */
-        border-radius: 5px;
-        cursor: pointer;
-        font-weight: bold;
-        transition: background-color 0.3s ease;
-    }}
+# HTML template for the interface
+html_template = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+</head>
+<body>
+    <div class="chat-container">
+        <div id="chat-box" class="chat-box"></div>
+        <input type="text" id="user-input" placeholder="Type your message here..." />
+        <button id="send-btn">Send</button>
+        <button id="voice-btn">🎤 Speak</button>
+    </div>
+    <script>
+        const sendBtn = document.getElementById('send-btn');
+        const userInput = document.getElementById('user-input');
+        const voiceBtn = document.getElementById('voice-btn');
+        const chatBox = document.getElementById('chat-box');
 
-    .chat-input button:hover {{
-        background-color: #e69900; /* Darker gold on hover */
-    }}
+        sendBtn.addEventListener('click', () => {
+            const userMessage = userInput.value;
+            fetch('/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: userMessage})
+            }).then(response => response.json())
+              .then(data => {
+                  const botMessageDiv = document.createElement('div');
+                  botMessageDiv.textContent = data.response;
+                  chatBox.appendChild(botMessageDiv);
+                  speak(data.response);
+              });
+        });
 
-    .user-msg {{
-        text-align: right;
-        margin: 10px 0;
-        padding: 10px;
-        background-color: #f7b7a3; /* Soft red background for user messages */
-        border-radius: 10px;
-        max-width: 80%;
-        margin-left: auto;
-        color: #000000; /* Black text for visibility */
-        font-weight: bold;
-    }}
+        voiceBtn.addEventListener('click', () => {
+            fetch('/listen').then(response => response.json())
+                             .then(data => {
+                                 userInput.value = data.message;
+                                 sendBtn.click();
+                             });
+        });
+    </script>
+</body>
+</html>
+"""
 
-    .bot-msg {{
-        text-align: left;
-        margin: 10px 0;
-        padding: 10px;
-        background-color: #dff0d8; /* Light green background for bot messages */
-        border-radius: 10px;
-        max-width: 80%;
-        color: #000000; /* Black text for visibility */
-        font-weight: bold;
-    }}
+@app.route('/')
+def home():
+    return render_template_string(html_template)
 
-    /* Scrollbar styling for chatlogs */
-    .chatlogs::-webkit-scrollbar {{
-        width: 10px;
-    }}
-    .chatlogs::-webkit-scrollbar-thumb {{
-        background-color: #d0312d; /* Red scrollbar thumb */
-        border-radius: 5px;
-    }}
-    .chatlogs::-webkit-scrollbar-track {{
-        background-color: #ffeead; /* Match pale yellow background */
-    }}
-</style>                   
-            </head>
-            <body>
-                <div class="chatbox">
-                    <div class="chatlogs" id="chatlogs"></div>
-                    <div class="chat-input">
-                        <input type="text" id="userInput" placeholder="Type your message...">
-                        <button onclick="sendMessage()">Send</button>
-                    </div>
-                </div>
-                <script>
-                    function sendMessage() {{
-                        var userInput = document.getElementById("userInput").value;
-                        if (userInput.trim() !== "") {{
-                            var chatlogs = document.getElementById("chatlogs");
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_input = request.json.get('message')
+    response = get_chatbot_response(user_input)
+    return jsonify({'response': response})
 
-                            // Display user message
-                            chatlogs.innerHTML += "<div class='user-msg'>" + userInput + "</div>";
-                            document.getElementById("userInput").value = "";
+@app.route('/listen', methods=['GET'])
+def listen_to_user():
+    message = listen()
+    return jsonify({'message': message if message else "Sorry, I couldn't understand."})
 
-                            // Send input to Python backend and get response
-                            fetch('/get_response?message=' + encodeURIComponent(userInput))
-                            .then(response => response.json())
-                            .then(data => {{
-                                // Display bot response
-                                chatlogs.innerHTML += "<div class='bot-msg'>" + data.response + "</div>";
-                                chatlogs.scrollTop = chatlogs.scrollHeight;
-
-                                // If audio file exists, play it
-                                if (data.audio) {{
-                                    var audio = new Audio('/' + data.audio);
-                                    audio.play();
-                                }}
-                            }});
-                        }}
-                    }}
-                </script>
-            </body>
-            </html>
-            """.encode())
-        elif self.path.startswith('/get_response'):
-            # Handle chatbot response requests
-            try:
-                message = unquote(self.path.split('=')[1])  # Extract message from URL
-                response = get_bot_response(message)
-                audio_file = generate_tts_response(response)  # Generate TTS
-                self.send_response(200)
-                self.send_header("Content-type", "application/json")
-                self.end_headers()
-                self.wfile.write(json.dumps({"response": response, "audio": audio_file}).encode())
-            except IndexError:
-                self.send_error(400, "Bad Request: No message provided.")
-        elif self.path.startswith('/response.mp3'):            
-self.send_response(200)
-            self.send_header("Content-type", "audio/mpeg")
-            self.end_headers()
-            with open("response.mp3", "rb") as file:
-                self.wfile.write(file.read())
-
-# Server setup for a single port
-def run(server_class=http.server.HTTPServer, handler_class=MyHandler, port=8000):
-    with socketserver.TCPServer(("", port), handler_class) as httpd:
-        print(f"Serving on port {port}")
-        httpd.serve_forever()
-
-# Function to run multiple servers on different ports
-def run_multiple_servers(ports):
-    for port in ports:
-        # Start a new thread for each server instance
-        thread = threading.Thread(target=run, args=(http.server.HTTPServer, MyHandler, port))
-        thread.daemon = True  # Ensure thread terminates when main program ends
-        thread.start()
-
-if __name__ == "__main__":
-    # List of ports to run servers on
-    ports = [1200, 8080, 9100, 3100, 9090, 2024, 2023]
-    run_multiple_servers(ports)
+if __name__ == '__main__':
+    app.run(debug=True)
